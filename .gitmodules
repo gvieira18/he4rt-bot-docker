@@ -1,0 +1,8 @@
+[submodule "apps/he4rt-bot-api"]
+	path = apps/he4rt-bot-api
+	url = https://github.com/he4rt/he4rt-bot-api.git
+	branch = main
+[submodule "apps/he4rt-bot-next"]
+	path = apps/he4rt-bot-next
+	url = https://github.com/he4rt/he4rt-bot-next.git
+	branch = main
