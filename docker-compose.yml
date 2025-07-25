@@ -1,0 +1,101 @@
+services:
+  he4rt-bot-php:
+    build:
+      context: ./apps/he4rt-bot-api
+      dockerfile: ../../docker/php.Dockerfile
+    image: he4rt-bot-php:prod
+    restart: unless-stopped
+    container_name: he4rt-bot-php
+    environment:
+      - AUTORUN_ENABLED=false
+      - PHP_OPCACHE_ENABLE=1
+      - COLORTERM=truecolor
+      - TERM=xterm-256color
+    env_file:
+      - api.env
+    networks:
+      - he4rt-bot
+    extra_hosts:
+      - 'host.docker.internal:host-gateway'
+    expose:
+      - '8080'
+    ports:
+      - '8080:8080'
+    depends_on:
+      he4rt-bot-mysql:
+        condition: service_healthy
+      he4rt-bot-redis:
+        condition: service_healthy
+
+  he4rt-bot-node:
+    build:
+      context: ./apps/he4rt-bot-next
+      dockerfile: ../../docker/node.Dockerfile
+    image: he4rt-bot-node:prod
+    restart: unless-stopped
+    container_name: he4rt-bot-node
+    env_file:
+      - bot.env
+    environment:
+      - COLORTERM=truecolor
+      - TERM=xterm-256color
+    volumes:
+      - /usr/local/app/node_modules
+    networks:
+      - he4rt-bot
+    depends_on:
+      - he4rt-bot-php
+
+  he4rt-bot-mysql:
+    build:
+      context: .
+      dockerfile: ./docker/mysql.Dockerfile
+    image: he4rt-bot-mysql:prod
+    restart: unless-stopped
+    container_name: he4rt-bot-mysql
+    env_file:
+      - db.env
+    networks:
+      - he4rt-bot
+    volumes:
+      - mysql:/var/lib/mysql
+    ports:
+      - '3306:3306'
+    healthcheck:
+      test: ['CMD', 'mysqladmin', '-h', 'localhost', '-uroot', '-p$$MYSQL_ROOT_PASSWORD', '-s', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 5s
+
+  he4rt-bot-redis:
+    build:
+      dockerfile: docker/redis.Dockerfile
+      context: .
+    image: he4rt-bot-redis:prod
+    restart: unless-stopped
+    container_name: he4rt-bot-redis
+    hostname: dev
+    ports:
+      - '6379:6379'
+    networks:
+      - he4rt-bot
+    healthcheck:
+      test: ['CMD-SHELL', "[ $$(redis-cli ping) = 'PONG' ]" ]
+      interval: 10s
+      retries: 5
+      timeout: 10s
+      start_period: 5s
+
+
+networks:
+  he4rt-bot:
+    name: he4rt-bot
+    driver: bridge
+    driver_opts:
+      com.docker.network.bridge.name: he4rt-bot
+      com.docker.network.bridge.host_binding_ipv4: '127.0.0.1'
+
+volumes:
+  mysql:
+    name: mysql
