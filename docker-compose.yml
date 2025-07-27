@@ -41,6 +41,7 @@ services:
       - TERM=xterm-256color
     volumes:
       - /usr/local/app/node_modules
+      - ./firebase_admin.json:/usr/local/firebase_admin.json
     networks:
       - he4rt-bot
     depends_on:
